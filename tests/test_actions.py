@@ -64,7 +64,7 @@ def test_composite_action_reaches_its_siblings_by_major_tag() -> None:
     steps = _composite_action()["runs"]["steps"]
     historia_refs = [step["uses"] for step in steps if step.get("uses", "").startswith("CodyCBakerPhD/historia-action")]
 
-    expected = [f"CodyCBakerPhD/historia-action/{name}@v0" for name in ("update-github", "project-populate")]
+    expected = [f"CodyCBakerPhD/historia-action/{name}@v1" for name in ("update-github", "project-populate")]
     assert historia_refs == expected
 
 
@@ -80,7 +80,7 @@ def test_composite_action_leaves_the_date_refresh_out() -> None:
     steps = _composite_action()["runs"]["steps"]
     historia_refs = [step.get("uses", "") for step in steps]
 
-    assert "CodyCBakerPhD/historia-action/project-update-dates@v0" not in historia_refs
+    assert "CodyCBakerPhD/historia-action/project-update-dates@v1" not in historia_refs
 
 
 @pytest.mark.ai_generated
