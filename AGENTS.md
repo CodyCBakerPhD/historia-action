@@ -15,10 +15,11 @@ GitHub Actions that run **Historia** from a published container image. The packa
   references are written once when the tag is cut.
 - `VERSION` holds the tag this tree is meant to be published under, and is the only place that tag
   is decided. Bump it in the same commit that rewrites the references. The tests read it rather than
-  a literal, so a reference left on the previous tag fails before the commit lands. The
-  `Release guard` workflow compares it against the tag actually released, which it can only do after
-  the fact: it reports a mismatch rather than refusing one, since the tag does not exist yet while
-  the commit is being made.
+  a literal, so a reference left on the previous tag fails before the commit lands.
+- Release by publishing the draft that `Prepare release draft` keeps on every merge to `main`. Its
+  tag name comes from `VERSION` and its target from that commit, so the tag is never typed. It
+  prepares nothing when the tag already exists, since moving a published tag is a deliberate act
+  rather than a release.
 - A reference to an older tag resolves and keeps working, so what it costs is not a broken run. It is
   independence: the newer tag is only as stable as the older one it reaches for, and major tags move.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly.
