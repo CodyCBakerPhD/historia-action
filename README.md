@@ -49,13 +49,13 @@ The action needs one personal access token, set as the `GH_PAT` secret, plus the
 
    Set:
 
-   1a. `Resource owner:` to the organization.
+   a. `Resource owner:` to the organization.
 
-   1b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
+   b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
 
-   1c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
+   c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
 
-   1d. `Organization permissions:` with `Projects` as read and write.
+   d. `Organization permissions:` with `Projects` as read and write.
 
    This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
 
@@ -63,7 +63,7 @@ The action needs one personal access token, set as the `GH_PAT` secret, plus the
 
    Set:
 
-   2a. The `project` scope, plus `repo` if any repository you track is private.
+   a. The `project` scope, plus `repo` if any repository you track is private.
 
    Unfortunately, GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. We recommend using an organization to avoid this.
 
