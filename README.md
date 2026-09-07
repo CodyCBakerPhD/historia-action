@@ -65,7 +65,7 @@ The action needs one personal access token, set as the `GH_PAT` secret, plus the
 
    2a. The `project` scope, plus `repo` if any repository you track is private.
 
-   GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. A free organization avoids this.
+   Unfortunately, GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. We recommend using an organization to avoid this.
 
 ## The individual steps
 
