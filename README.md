@@ -88,24 +88,3 @@ The composite is built from three narrower actions, each wrapping one command. U
     recency: "2"
     token: ${{ secrets.GH_PAT }}
 ```
-
-Paths are relative to the workspace root, since GitHub mounts the workspace as the container's working directory. A step-level `working-directory:` has no effect on `uses:` steps.
-
-## Versioning
-
-Reference `@v0`. The action tag versions the actions, not the package, so it does not change when **Historia** releases. `v0` names one published container image, `ghcr.io/codycbakerphd/historia:0.10.15`, and never moves off it.
-
-Changing the actions means cutting `@v1`, which states the image it needs. The image is chosen deliberately at that point rather than tracking whatever released last, so a workflow keeps running the version its action tag was built against until it is pointed at a new one.
-
-These actions previously lived in the **Historia** repository under `action/`, where they were released alongside the package. Tags there up to `v0.10.15` still work and stay frozen at the image they shipped with, but they receive no further changes.
-
-## Notes
-
-- Linux runners only. This is a GitHub limitation on container actions.
-- Container actions run as root, so files written into the workspace are root-owned. The composite reclaims them before committing. If you use the individual actions, restore ownership yourself before any step that needs to modify those files:
-
-  ```yaml
-  - run: sudo chown -R "$(id -u):$(id -g)" .
-  ```
-
-- Each action exposes the options the scheduled workflow uses. For anything else, run the image directly with `docker run --rm -v "$PWD:/github/workspace" -w /github/workspace ghcr.io/codycbakerphd/historia:latest ...`.
