@@ -11,6 +11,9 @@ GitHub Actions that run **Historia** from a published container image. The packa
   A **Historia** release changes nothing here.
 - `runs.image` names one published image and stays there. Edit it only when cutting the next major
   tag, and choose the image that tag needs rather than whatever released last.
+- Always an explicit `X.Y.Z`, never a floating tag such as `latest` or `dev`. A floating tag would
+  make a published action run whatever was pushed to it most recently, so a workflow pinned to one
+  tag of this repository would change under it. The tests reject anything else.
 - The composite reaches its siblings by the same major tag it is published under, so those
   references are written once when the tag is cut.
 - `VERSION` holds the tag this tree is meant to be published under, and is the only place that tag

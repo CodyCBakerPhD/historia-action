@@ -35,11 +35,15 @@ def test_actions_pin_one_released_image() -> None:
 
     That pin is deliberate rather than derived. It changes when the actions are given a new major tag,
     not when Historia releases, so a workflow keeps running what its tag was built against.
+
+    Only an explicit `X.Y.Z` counts. A floating tag such as `latest` or `dev` would make a published
+    action run whatever was pushed to that tag most recently, so a workflow pinned to one tag of this
+    repository would silently change under it, which is the whole thing these pins exist to prevent.
     """
     images = [yaml.safe_load(path.read_text(encoding="utf-8"))["runs"]["image"] for path in _ACTION_PATHS]
     matches = [_IMAGE_PATTERN.match(image) for image in images]
 
-    assert all(matches), images
+    assert all(matches), f"every image must be pinned to an explicit version, got {images}"
     pinned_versions = {match.group(1) for match in matches if match is not None}
     assert len(pinned_versions) == 1, pinned_versions
 
