@@ -1,6 +1,6 @@
 # historia-action
 
-GitHub Actions that run [**Historia**](https://github.com/CodyCBakerPhD/historia) from a pinned container image, so a workflow never has to install the package itself.
+GitHub Actions that run [**Historia**](https://github.com/CodyCBakerPhD/historia) from a pinned container image.
 
 ## The whole process in one step
 
@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: CodyCBakerPhD/historia-action@v0
         with:
-          username: octocat
-          project-url: https://github.com/users/octocat/projects/1
+          username: CodyCBakerPhD
+          project-url: https://github.com/users/CodyCBakerPhD/projects/1
           token: ${{ secrets.GH_PAT }}
 ```
 
