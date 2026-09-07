@@ -1,0 +1,108 @@
+name: Historia work history update
+description: Refresh a work history data repository and push the results to its GitHub Project board.
+
+inputs:
+  username:
+    description: GitHub username whose activity should be tracked.
+    required: true
+  project-url:
+    description: URL of the GitHub Project v2 to keep up to date.
+    required: true
+  token:
+    description: >-
+      Personal access token that fetches the activity and updates the project board: a fine-grained
+      token for a board owned by an organization, or a classic `project`-scoped token for a board
+      owned by a user account. See the README. It never pushes: the checkout and pushes use the
+      workflow's own `GITHUB_TOKEN`, so the job needs `contents: write`.
+    required: true
+  recency:
+    description: Number of most recent days to fetch. Smart updating still applies.
+    required: false
+    default: "2"
+  directory:
+    description: Directory within the repository that holds the collected JSON files.
+    required: false
+    default: history
+  placeholder:
+    description: Days after an item's creation date to use as the placeholder end date while it is still open.
+    required: false
+    default: "180"
+  archive-branch:
+    description: >-
+      Orphan branch to force-push a `content.tar.gz` of the collected data to, for distribution over
+      the GitHub CDN. Set to an empty string to skip the archive entirely.
+    required: false
+    default: dist
+  commit-message:
+    description: Message for the commit holding each run's new content.
+    required: false
+    default: update
+
+runs:
+  using: composite
+  steps:
+    # The checkout persists this token in the git config, so every `git push` below uses it too.
+    - name: Check out the data repository
+      uses: actions/checkout@v7
+      with:
+        token: ${{ github.token }}
+
+    - name: Configure git identity
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Update work history data
+      uses: CodyCBakerPhD/historia-action/update-github@v0
+      with:
+        directory: ${{ inputs.directory }}
+        username: ${{ inputs.username }}
+        recency: ${{ inputs.recency }}
+        token: ${{ inputs.token }}
+
+    # The update runs in a container as root, so the files it wrote are root-owned and the steps
+    # below, which run as the unprivileged runner user, could not otherwise commit them.
+    - name: Restore workspace ownership
+      shell: bash
+      run: sudo chown -R "$(id -u):$(id -g)" .
+
+    - name: Commit and push new content
+      shell: bash
+      env:
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+      run: |
+        git add .
+        git diff --quiet --cached || git commit --message "$COMMIT_MESSAGE"
+        git push
+
+    - name: Populate the GitHub project
+      uses: CodyCBakerPhD/historia-action/project-populate@v0
+      with:
+        directory: ${{ inputs.directory }}
+        url: ${{ inputs.project-url }}
+        placeholder: ${{ inputs.placeholder }}
+        token: ${{ inputs.token }}
+
+    - name: Update GitHub project dates
+      uses: CodyCBakerPhD/historia-action/project-update-dates@v0
+      with:
+        url: ${{ inputs.project-url }}
+        placeholder: ${{ inputs.placeholder }}
+        token: ${{ inputs.token }}
+
+    # Last, because it leaves the checkout on the orphan archive branch.
+    - name: Push the compressed archive
+      if: inputs.archive-branch != ''
+      shell: bash
+      env:
+        ARCHIVE_BRANCH: ${{ inputs.archive-branch }}
+        DIRECTORY: ${{ inputs.directory }}
+      run: |
+        tar -czf content.tar.gz "$DIRECTORY"
+        git branch -D "$ARCHIVE_BRANCH" || true
+        git checkout --orphan "$ARCHIVE_BRANCH"
+        git rm -rf --cached .
+        git add content.tar.gz
+        git commit --message "update dist archive [skip ci]"
+        git push --force origin "HEAD:$ARCHIVE_BRANCH"
