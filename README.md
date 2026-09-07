@@ -45,7 +45,7 @@ It checks out the data repository, fetches recent activity, commits and pushes t
 
 The action needs one personal access token, plus the workflow's own `GITHUB_TOKEN` for the pushes. Which kind of token depends on who owns the project board.
 
-1. Create the token.
+1. Create and set the `GH_PAT` token.
 
    **Board owned by an organization (recommended).**
 
@@ -72,14 +72,6 @@ The action needs one personal access token, plus the workflow's own `GITHUB_TOKE
    a. The `project` scope, plus `repo` if any repository you track is private.
 
    GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. A free organization avoids this.
-
-2. Store the token in the data repository.
-
-   Open Settings, then Secrets and variables, then Actions, and add a repository secret named `GH_PAT` holding it.
-
-3. Give the job `permissions: contents: write`, as in the example above.
-
-   The checkout and every push use the workflow's own `GITHUB_TOKEN`, which is limited to the data repository. The personal token never pushes anywhere.
 
 ## The individual steps
 
