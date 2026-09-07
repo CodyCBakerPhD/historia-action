@@ -81,8 +81,6 @@ The action needs one personal access token, plus the workflow's own `GITHUB_TOKE
 
    The checkout and every push use the workflow's own `GITHUB_TOKEN`, which is limited to the data repository. The personal token never pushes anywhere.
 
-The `workflow` scope is only needed by the deprecated `historia setup automation` wizard.
-
 ## The individual steps
 
 The composite is built from three narrower actions, each wrapping one command. Use them directly to run only part of the process, or to insert steps of your own in between. The [expanded workflow](https://historia.readthedocs.io/en/latest/tutorial/manual-automation-setup.html) shows them wired together.
