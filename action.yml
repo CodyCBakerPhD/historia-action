@@ -88,13 +88,6 @@ runs:
         placeholder: ${{ inputs.placeholder }}
         token: ${{ inputs.token }}
 
-    - name: Update GitHub project dates
-      uses: CodyCBakerPhD/historia-action/project-update-dates@v0
-      with:
-        url: ${{ inputs.project-url }}
-        placeholder: ${{ inputs.placeholder }}
-        token: ${{ inputs.token }}
-
     # Last, because it leaves the checkout on the orphan archive branch.
     - name: Push the compressed archive
       if: inputs.archive-branch != ''

@@ -28,7 +28,9 @@ jobs:
           token: ${{ secrets.GH_PAT }}
 ```
 
-It checks out the data repository, fetches recent activity, commits and pushes the new content, populates the project board, refreshes the board's dates, and force-pushes a compressed archive to a `dist` branch.
+It checks out the data repository, fetches recent activity, commits and pushes the new content, populates the project board, and force-pushes a compressed archive to a `dist` branch.
+
+Refreshing the dates already on the board is not part of it. See [Refreshing the board's dates](#refreshing-the-boards-dates).
 
 | Input | Required | Default | Description |
 | --- | --- | --- | --- |
@@ -86,5 +88,18 @@ The composite is built from three narrower actions, each wrapping one command. U
     directory: history
     username: CodyCBakerPhD
     recency: "2"
+    token: ${{ secrets.GH_PAT }}
+```
+
+## Refreshing the board's dates
+
+`project-update-dates` walks every item on the board and writes its start and end date, so its cost scales with the size of the board rather than with recent activity. A board of a few thousand items takes tens of minutes and can exhaust the hourly GraphQL budget before finishing, which is why the composite does not run it.
+
+Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. Run it as its own step when you want that, on a schedule that suits how much the board costs to walk:
+
+```yaml
+- uses: CodyCBakerPhD/historia-action/project-update-dates@v0
+  with:
+    url: https://github.com/users/CodyCBakerPhD/projects/1
     token: ${{ secrets.GH_PAT }}
 ```
