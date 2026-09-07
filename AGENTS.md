@@ -13,6 +13,10 @@ GitHub Actions that run **Historia** from a published container image. The packa
   tag, and choose the image that tag needs rather than whatever released last.
 - The composite reaches its siblings by the same major tag it is published under, so those
   references are written once when the tag is cut.
+- `VERSION` holds the tag this tree is meant to be published under, and is the only place that tag
+  is decided. Bump it in the same commit that rewrites the references. The tests read it rather than
+  a literal, so a reference left on the previous tag fails before the commit lands, and the
+  `Release guard` workflow compares it against the tag actually being released.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly.
 - The `action-versions-agree` pre-commit hook runs the tests that catch the pinned image and the
   sibling references drifting apart. Both are written by hand, so it fails at commit time rather

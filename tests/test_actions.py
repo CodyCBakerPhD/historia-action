@@ -6,8 +6,15 @@ import yaml
 
 _REPOSITORY_ROOT = pathlib.Path(__file__).parent.parent
 _COMPOSITE_ACTION_PATH = _REPOSITORY_ROOT / "action.yml"
+_README_PATH = _REPOSITORY_ROOT / "README.md"
+_VERSION_PATH = _REPOSITORY_ROOT / "VERSION"
 _ACTION_PATHS = sorted(_REPOSITORY_ROOT.glob("*/action.yml"))
 _IMAGE_PATTERN = re.compile(r"^docker://ghcr\.io/codycbakerphd/historia:(\d+\.\d+\.\d+)$")
+_ANY_SELF_REFERENCE_PATTERN = re.compile(r"CodyCBakerPhD/historia-action(?:/[a-z-]+)?@(v\d+)")
+
+# The tag this tree is meant to be published under. Every reference to this repository, in the
+# composite and in the README, must name it, and the release workflow checks the tag against it.
+_MAJOR_TAG = _VERSION_PATH.read_text(encoding="utf-8").strip()
 
 
 def _composite_action() -> dict:
@@ -60,12 +67,45 @@ def test_composite_action_reaches_its_siblings_by_major_tag() -> None:
 
     The siblings share the composite's major tag, so this reference is written once when that tag is
     cut and never rewritten. A package version here would have to be bumped on every release.
+
+    The expected tag comes from `VERSION` rather than from a literal here. A literal only proves the
+    references agree with this test, which is satisfied just as well by every one of them naming the
+    previous tag.
     """
     steps = _composite_action()["runs"]["steps"]
     historia_refs = [step["uses"] for step in steps if step.get("uses", "").startswith("CodyCBakerPhD/historia-action")]
 
-    expected = [f"CodyCBakerPhD/historia-action/{name}@v1" for name in ("update-github", "project-populate")]
+    expected = [
+        f"CodyCBakerPhD/historia-action/{name}@{_MAJOR_TAG}" for name in ("update-github", "project-populate")
+    ]
     assert historia_refs == expected
+
+
+@pytest.mark.ai_generated
+def test_every_self_reference_names_the_version_being_published() -> None:
+    """
+    Nothing in the repository may point at a tag other than the one `VERSION` names.
+
+    A reference left on the previous tag resolves and runs, so neither a test of the files against
+    each other nor a workflow run catches it. It goes wrong at the next image bump, when a composite
+    published as one tag keeps running the image its siblings pinned under the older one.
+    """
+    sources = [_COMPOSITE_ACTION_PATH, _README_PATH, *_ACTION_PATHS]
+
+    stale = {
+        f"{path.relative_to(_REPOSITORY_ROOT)}: {tag}"
+        for path in sources
+        for tag in _ANY_SELF_REFERENCE_PATTERN.findall(path.read_text(encoding="utf-8"))
+        if tag != _MAJOR_TAG
+    }
+
+    assert stale == set()
+
+
+@pytest.mark.ai_generated
+def test_version_file_names_a_major_tag() -> None:
+    """`VERSION` is compared against the release tag, so it has to be shaped like one."""
+    assert re.fullmatch(r"v\d+", _MAJOR_TAG) is not None, _MAJOR_TAG
 
 
 @pytest.mark.ai_generated
@@ -80,7 +120,7 @@ def test_composite_action_leaves_the_date_refresh_out() -> None:
     steps = _composite_action()["runs"]["steps"]
     historia_refs = [step.get("uses", "") for step in steps]
 
-    assert "CodyCBakerPhD/historia-action/project-update-dates@v1" not in historia_refs
+    assert f"CodyCBakerPhD/historia-action/project-update-dates@{_MAJOR_TAG}" not in historia_refs
 
 
 @pytest.mark.ai_generated
