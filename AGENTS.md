@@ -14,6 +14,9 @@ GitHub Actions that run **Historia** from a published container image. The packa
 - The composite reaches its siblings by the same major tag it is published under, so those
   references are written once when the tag is cut.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly.
+- The `action-versions-agree` pre-commit hook runs the tests that catch the pinned image and the
+  sibling references drifting apart. Both are written by hand, so it fails at commit time rather
+  than leaving it to CI.
 
 ## Code style
 

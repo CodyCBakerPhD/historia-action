@@ -38,3 +38,18 @@ repos:
   - id: codespell
     additional_dependencies:
     - tomli
+
+- repo: local
+  hooks:
+    - id: action-versions-agree
+      name: action versions agree
+      description: >-
+        The pinned image and the composite's references to its siblings are written by hand, so this
+        runs the tests that catch them drifting apart before the commit rather than in CI.
+      entry: pytest tests/test_actions.py --quiet
+      language: python
+      pass_filenames: false
+      files: ^(action\.yml|[a-z-]+/action\.yml|tests/test_actions\.py)$
+      additional_dependencies:
+        - pytest
+        - pyyaml
