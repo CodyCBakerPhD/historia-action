@@ -43,33 +43,27 @@ It checks out the data repository, fetches recent activity, commits and pushes t
 
 ## Setup
 
-The action needs one personal access token, plus the workflow's own `GITHUB_TOKEN` for the pushes. Which kind of token depends on who owns the project board.
+The action needs one personal access token, set as the `GH_PAT` secret, plus the workflow's own `GITHUB_TOKEN` for the pushes. Which kind of token depends on who owns the project board, so create it by step 1 or by step 2.
 
-1. Create and set the `GH_PAT` token.
-
-   **Board owned by an organization (recommended).**
-
-   Create a [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
+1. **Board owned by an organization (recommended).** Create a [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
 
    Set:
 
-   a. `Resource owner:` to the organization.
+   1a. `Resource owner:` to the organization.
 
-   b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
+   1b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
 
-   c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
+   1c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
 
-   d. `Organization permissions:` with `Projects` as read and write.
+   1d. `Organization permissions:` with `Projects` as read and write.
 
    This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
 
-   **Board owned by your user account.**
-
-   Create a [classic token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic).
+2. **Board owned by your user account.** Create a [classic token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic).
 
    Set:
 
-   a. The `project` scope, plus `repo` if any repository you track is private.
+   2a. The `project` scope, plus `repo` if any repository you track is private.
 
    GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. A free organization avoids this.
 
