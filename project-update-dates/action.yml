@@ -9,13 +9,21 @@ inputs:
     description: Days after an item's creation date to use as the placeholder end date while it is still open.
     required: false
     default: "180"
+  recency:
+    description: >-
+      Only update items created or closed within this many most recent days. An item untouched over
+      the window would be written back the value it already holds, so skipping it changes nothing.
+      A full pass over every item costs two GraphQL mutations each, which exhausts the hourly budget
+      on a board of a few thousand. Run the image directly to do that deliberately, for a backfill.
+    required: false
+    default: "2"
   token:
     description: GitHub token used to authenticate API requests.
     required: true
 
 runs:
   using: docker
-  image: docker://ghcr.io/codycbakerphd/historia:0.10.15
+  image: docker://ghcr.io/codycbakerphd/historia:0.11.1
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
   args:
@@ -26,3 +34,5 @@ runs:
     - ${{ inputs.url }}
     - --placeholder
     - ${{ inputs.placeholder }}
+    - --recency
+    - ${{ inputs.recency }}

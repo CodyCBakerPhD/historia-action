@@ -21,7 +21,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: CodyCBakerPhD/historia-action@v1
+      - uses: CodyCBakerPhD/historia-action@v2
         with:
           username: CodyCBakerPhD
           project-url: https://github.com/users/CodyCBakerPhD/projects/1
@@ -83,7 +83,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 | `project-update-dates` | `historia project update dates` |
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/update-github@v1
+- uses: CodyCBakerPhD/historia-action/update-github@v2
   with:
     directory: history
     username: CodyCBakerPhD
@@ -93,13 +93,28 @@ The composite is built from three narrower actions, each wrapping one command. U
 
 ## Refreshing the board's dates
 
-`project-update-dates` walks every item on the board and writes its start and end date, so its cost scales with the size of the board rather than with recent activity. A board of a few thousand items takes tens of minutes and can exhaust the hourly GraphQL budget before finishing, which is why the composite does not run it.
-
-Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. Run it as its own step when you want that, on a schedule that suits how much the board costs to walk:
+Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. That is worth its own step rather than a place in the composite:
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/project-update-dates@v1
+- uses: CodyCBakerPhD/historia-action/project-update-dates@v2
   with:
     url: https://github.com/users/CodyCBakerPhD/projects/1
+    recency: "7"
     token: ${{ secrets.GH_PAT }}
+```
+
+| Input | Required | Default | Description |
+| --- | --- | --- | --- |
+| `url` | yes | | URL of the GitHub Project v2 whose dates are refreshed. |
+| `token` | yes | | Personal access token that writes the board. See [Setup](#setup). |
+| `recency` | no | `2` | Only update items created or closed within this many most recent days. |
+| `placeholder` | no | `180` | Days after creation to use as a placeholder end date for open items. |
+
+`recency` is what makes this affordable. Each item costs two GraphQL mutations, so a pass over a board of a few thousand items spends tens of minutes and the whole hourly budget, and an item untouched over the window is only ever written back the value it already holds. Widening the window past the schedule's interval makes the step self-healing, since a skipped or failed run leaves nothing permanently stale.
+
+A full pass over every item is a different job. It is what a first run needs, or a board whose items predate the date fields, and it is deliberate enough to run by hand:
+
+```bash
+docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.11.1 \
+  project update dates --url https://github.com/users/CodyCBakerPhD/projects/1
 ```
