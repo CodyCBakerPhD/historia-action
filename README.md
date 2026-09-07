@@ -46,10 +46,40 @@ It checks out the data repository, fetches recent activity, commits and pushes t
 The action needs one personal access token, plus the workflow's own `GITHUB_TOKEN` for the pushes. Which kind of token depends on who owns the project board.
 
 1. Create the token.
-   - **Board owned by an organization (recommended).** Create a [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token). Resource owner: the organization. Repository access: the repositories to track. Repository permissions: `Issues` read-only and `Pull requests` read-only. Organization permissions: `Projects` read and write. This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
-   - **Board owned by your user account.** Create a [classic token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) with the `project` scope, plus `repo` if any repository you track is private. GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. A free organization avoids this.
-2. In the data repository, open Settings, then Secrets and variables, then Actions, and add a repository secret named `GH_PAT` holding that token.
-3. Give the job `permissions: contents: write`, as in the example above. The checkout and every push use the workflow's own `GITHUB_TOKEN`, which is limited to the data repository. The personal token never pushes anywhere.
+
+   **Board owned by an organization (recommended).**
+
+   Create a [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
+
+   Set:
+
+   a. `Resource owner:` to the organization.
+
+   b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
+
+   c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
+
+   d. `Organization permissions:` with `Projects` as read and write.
+
+   This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
+
+   **Board owned by your user account.**
+
+   Create a [classic token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic).
+
+   Set:
+
+   a. The `project` scope, plus `repo` if any repository you track is private.
+
+   GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. A free organization avoids this.
+
+2. Store the token in the data repository.
+
+   Open Settings, then Secrets and variables, then Actions, and add a repository secret named `GH_PAT` holding it.
+
+3. Give the job `permissions: contents: write`, as in the example above.
+
+   The checkout and every push use the workflow's own `GITHUB_TOKEN`, which is limited to the data repository. The personal token never pushes anywhere.
 
 The `workflow` scope is only needed by the deprecated `historia setup automation` wizard.
 
@@ -67,7 +97,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 - uses: CodyCBakerPhD/historia-action/update-github@v0
   with:
     directory: history
-    username: octocat
+    username: CodyCBakerPhD
     recency: "2"
     token: ${{ secrets.GH_PAT }}
 ```
