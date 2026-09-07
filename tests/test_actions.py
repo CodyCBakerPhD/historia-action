@@ -65,8 +65,8 @@ def test_composite_action_reaches_its_siblings_by_major_tag() -> None:
     """
     The composite reaches its siblings by full reference, since `uses:` accepts no expressions.
 
-    The siblings share the composite's major tag, so this reference is written once when that tag is
-    cut and never rewritten. A package version here would have to be bumped on every release.
+    The siblings share the composite's major tag, so these references are rewritten only when
+    `VERSION` names a new one. A package version here would have to be bumped on every release.
 
     The expected tag comes from `VERSION` rather than from a literal here. A literal only proves the
     references agree with this test, which is satisfied just as well by every one of them naming the

@@ -15,8 +15,12 @@ GitHub Actions that run **Historia** from a published container image. The packa
   references are written once when the tag is cut.
 - `VERSION` holds the tag this tree is meant to be published under, and is the only place that tag
   is decided. Bump it in the same commit that rewrites the references. The tests read it rather than
-  a literal, so a reference left on the previous tag fails before the commit lands, and the
-  `Release guard` workflow compares it against the tag actually being released.
+  a literal, so a reference left on the previous tag fails before the commit lands. The
+  `Release guard` workflow compares it against the tag actually released, which it can only do after
+  the fact: it reports a mismatch rather than refusing one, since the tag does not exist yet while
+  the commit is being made.
+- A reference to an older tag resolves and keeps working, so what it costs is not a broken run. It is
+  independence: the newer tag is only as stable as the older one it reaches for, and major tags move.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly.
 - The `action-versions-agree` pre-commit hook runs the tests that catch the pinned image and the
   sibling references drifting apart. Both are written by hand, so it fails at commit time rather
