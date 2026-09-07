@@ -1,6 +1,10 @@
 name: Historia work history update
 description: Refresh a work history data repository and push the results to its GitHub Project board.
 
+branding:
+  icon: book-open
+  color: yellow
+
 inputs:
   username:
     description: GitHub username whose activity should be tracked.
