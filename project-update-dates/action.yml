@@ -1,0 +1,28 @@
+name: Historia update GitHub project dates
+description: Refresh start and end dates on a GitHub Project board using a pinned Historia container.
+
+inputs:
+  url:
+    description: URL of the GitHub Project v2 whose item dates should be updated.
+    required: true
+  placeholder:
+    description: Days after an item's creation date to use as the placeholder end date while it is still open.
+    required: false
+    default: "180"
+  token:
+    description: GitHub token used to authenticate API requests.
+    required: true
+
+runs:
+  using: docker
+  image: docker://ghcr.io/codycbakerphd/historia:0.10.15
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
+  args:
+    - project
+    - update
+    - dates
+    - --url
+    - ${{ inputs.url }}
+    - --placeholder
+    - ${{ inputs.placeholder }}

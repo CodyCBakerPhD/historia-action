@@ -1,0 +1,32 @@
+name: Historia update GitHub data
+description: Fetch a GitHub user's recent activity into a data directory using a pinned Historia container.
+
+inputs:
+  directory:
+    description: Directory to save the data to, relative to the workspace root.
+    required: true
+  username:
+    description: GitHub username to fetch information about.
+    required: true
+  recency:
+    description: Number of most recent days to fetch. Smart updating still applies.
+    required: false
+    default: "2"
+  token:
+    description: GitHub token used to authenticate API requests.
+    required: true
+
+runs:
+  using: docker
+  image: docker://ghcr.io/codycbakerphd/historia:0.10.15
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
+  args:
+    - update
+    - github
+    - --directory
+    - ${{ inputs.directory }}
+    - --username
+    - ${{ inputs.username }}
+    - --recency
+    - ${{ inputs.recency }}

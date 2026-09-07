@@ -1,0 +1,34 @@
+name: Historia populate GitHub project
+description: Add collected activity to a GitHub Project board using a pinned Historia container.
+
+inputs:
+  directory:
+    description: Directory containing the collected JSON files, relative to the workspace root.
+    required: true
+  url:
+    description: URL of the GitHub Project v2 to populate.
+    required: true
+  placeholder:
+    description: Days after an item's creation date to use as the placeholder end date while it is still open.
+    required: false
+    default: "180"
+  token:
+    description: GitHub token used to authenticate API requests.
+    required: true
+
+runs:
+  using: docker
+  image: docker://ghcr.io/codycbakerphd/historia:0.10.15
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
+  args:
+    - project
+    - populate
+    - --directory
+    - ${{ inputs.directory }}
+    - --url
+    - ${{ inputs.url }}
+    - --placeholder
+    - ${{ inputs.placeholder }}
+    # An action always runs headless, so the confirmation prompt is never answerable.
+    - --yes
