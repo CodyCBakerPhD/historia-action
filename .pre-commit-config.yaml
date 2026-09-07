@@ -49,7 +49,7 @@ repos:
       entry: pytest tests/test_actions.py --quiet
       language: python
       pass_filenames: false
-      files: ^(action\.yml|[a-z-]+/action\.yml|tests/test_actions\.py)$
+      files: ^(VERSION|README\.md|action\.yml|[a-z-]+/action\.yml|tests/test_actions\.py)$
       additional_dependencies:
         - pytest
         - pyyaml

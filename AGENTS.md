@@ -11,8 +11,20 @@ GitHub Actions that run **Historia** from a published container image. The packa
   A **Historia** release changes nothing here.
 - `runs.image` names one published image and stays there. Edit it only when cutting the next major
   tag, and choose the image that tag needs rather than whatever released last.
+- Always an explicit `X.Y.Z`, never a floating tag such as `latest` or `dev`. A floating tag would
+  make a published action run whatever was pushed to it most recently, so a workflow pinned to one
+  tag of this repository would change under it. The tests reject anything else.
 - The composite reaches its siblings by the same major tag it is published under, so those
   references are written once when the tag is cut.
+- `VERSION` holds the tag this tree is meant to be published under, and is the only place that tag
+  is decided. Bump it in the same commit that rewrites the references. The tests read it rather than
+  a literal, so a reference left on the previous tag fails before the commit lands.
+- Release by publishing the draft that `Prepare release draft` keeps on every merge to `main`. Its
+  tag name comes from `VERSION` and its target from that commit, so the tag is never typed. It
+  prepares nothing when the tag already exists, since moving a published tag is a deliberate act
+  rather than a release.
+- A reference to an older tag resolves and keeps working, so what it costs is not a broken run. It is
+  independence: the newer tag is only as stable as the older one it reaches for, and major tags move.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly.
 - The `action-versions-agree` pre-commit hook runs the tests that catch the pinned image and the
   sibling references drifting apart. Both are written by hand, so it fails at commit time rather

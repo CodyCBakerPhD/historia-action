@@ -1,0 +1,58 @@
+name: Prepare release draft
+
+# A release cut by hand asks for a tag name, and the answer is already in the repository: `VERSION`.
+# Typing it again is where `v1` came to be cut on a tree whose composite still called its siblings
+# by `@v0`.
+#
+# This keeps a draft release whose tag name and target are taken from `VERSION` and `main`, so
+# releasing is opening the prepared draft and pressing Publish. The tag is created from the stored
+# name, so there is nothing left to mistype. Nothing here can stop a release typed in by hand
+# instead, but it removes the reason to type one.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  Draft:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve the tag this tree is published under
+        id: resolve
+        run: |
+          TAG=$(tr -d '[:space:]' < VERSION)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "This tree is published as $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Skip when that tag already exists
+        id: released
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists. Moving it is a deliberate act, so nothing is prepared here." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare the draft
+        if: steps.released.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          NOTES="Actions published as \`$TAG\`, running \`$(python3 -c "import re,pathlib; print(re.search(r'image: docker://(\S+)', pathlib.Path('update-github/action.yml').read_text()).group(1))")\`."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES"
+            echo "Updated the existing draft for $TAG." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES"
+            echo "Created a draft for $TAG." >> "$GITHUB_STEP_SUMMARY"
+          fi
