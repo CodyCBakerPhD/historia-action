@@ -86,9 +86,12 @@ def test_every_self_reference_names_the_version_being_published() -> None:
     """
     Nothing in the repository may point at a tag other than the one `VERSION` names.
 
-    A reference left on the previous tag resolves and runs, so neither a test of the files against
-    each other nor a workflow run catches it. It goes wrong at the next image bump, when a composite
-    published as one tag keeps running the image its siblings pinned under the older one.
+    A reference left on the previous tag resolves and runs, and keeps running what it ran the day it
+    was cut, so neither a test of the files against each other nor a workflow run catches it.
+
+    What it costs is independence. A tag whose composite reaches outside itself is only as stable as
+    the tag it reaches for, and major tags move. Move or delete the older one and every workflow on
+    the newer one changes with it, having pinned a tag that was never touched.
     """
     sources = [_COMPOSITE_ACTION_PATH, _README_PATH, *_ACTION_PATHS]
 
