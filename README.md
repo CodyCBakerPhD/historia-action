@@ -21,7 +21,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: CodyCBakerPhD/historia-action@v0
+      - uses: CodyCBakerPhD/historia-action@v1
         with:
           username: CodyCBakerPhD
           project-url: https://github.com/users/CodyCBakerPhD/projects/1
@@ -83,7 +83,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 | `project-update-dates` | `historia project update dates` |
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/update-github@v0
+- uses: CodyCBakerPhD/historia-action/update-github@v1
   with:
     directory: history
     username: CodyCBakerPhD
@@ -98,7 +98,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. Run it as its own step when you want that, on a schedule that suits how much the board costs to walk:
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/project-update-dates@v0
+- uses: CodyCBakerPhD/historia-action/project-update-dates@v1
   with:
     url: https://github.com/users/CodyCBakerPhD/projects/1
     token: ${{ secrets.GH_PAT }}
