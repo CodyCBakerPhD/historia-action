@@ -56,3 +56,23 @@ jobs:
             gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES"
             echo "Created a draft for $TAG." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  # Nobody watches a draft that was never prepared, so a failure here is silent until the next
+  # release is cut and the draft is missing.
+  NotifyOnFailure:
+    permissions: {}
+    runs-on: ubuntu-latest
+    needs: [Draft]
+    if: ${{ always() && needs.Draft.result == 'failure' }}
+
+    steps:
+      - uses: dawidd6/action-send-mail@v18
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "CI Failure: Historia Action Release Draft"
+          to: cody.c.baker.phd@gmail.com
+          from: Historia <historia@users.noreply.github.com>
+          body: "The release draft workflow failed, please check status at https://github.com/CodyCBakerPhD/historia-action/actions/workflows/prepare_release.yml"
