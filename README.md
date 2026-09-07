@@ -57,7 +57,7 @@ Which kind of token depends on who owns the project board:
 
    c. `Repository permissions:` with `Issues` and `Pull requests` as `Access: read-only`.
      - Note: `Metadata` will automatically be included as `Access: Read-only`.
-   
+
    d. `Organization permissions:` with `Projects` as `Access: Read and write`.
 
    This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
