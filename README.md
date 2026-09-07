@@ -1,6 +1,6 @@
 # historia-action
 
-GitHub Actions that run [**Historia**](https://github.com/CodyCBakerPhD/historia) from a pinned container image.
+GitHub Actions that run [**Historia**](https://historia.readthedocs.io/en/latest/) from a pinned container image.
 
 ## The whole process in one step
 
