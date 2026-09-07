@@ -43,7 +43,9 @@ It checks out the data repository, fetches recent activity, commits and pushes t
 
 ## Setup
 
-The action needs one personal access token, set as the `GH_PAT` secret, plus the workflow's own `GITHUB_TOKEN` for the pushes. Which kind of token depends on who owns the project board, so create it by step 1 or by step 2.
+The action needs one personal access token, set as the `GH_PAT` secret, plus the workflow's own `GITHUB_TOKEN` for the pushes.
+
+Which kind of token depends on who owns the project board:
 
 1. **Board owned by an organization (recommended).** Create a [fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token).
 
@@ -53,9 +55,10 @@ The action needs one personal access token, set as the `GH_PAT` secret, plus the
 
    b. `Repository access:` to the repositories to track. Choose all public repositories, or select them individually to include private ones.
 
-   c. `Repository permissions:` with `Issues` and `Pull requests` as read-only.
-
-   d. `Organization permissions:` with `Projects` as read and write.
+   c. `Repository permissions:` with `Issues` and `Pull requests` as `Access: read-only`.
+     - Note: `Metadata` will automatically be included as `Access: Read-only`.
+   
+   d. `Organization permissions:` with `Projects` as `Access: Read and write`.
 
    This token reads only the repositories you selected, cannot write to any of them, and sees nothing private outside that organization.
 
@@ -63,7 +66,7 @@ The action needs one personal access token, set as the `GH_PAT` secret, plus the
 
    Set:
 
-   a. The `project` scope, plus `repo` if any repository you track is private.
+   a. The full `project` scope, plus full `repo` scope if any repository you want to track is private; otherwise, `repo: public_repo` is sufficient for only public repositories.
 
    Unfortunately, GitHub offers no fine-grained permission for user-owned Projects, and `repo` cannot be limited to selected repositories or to reading. We recommend using an organization to avoid this.
 
