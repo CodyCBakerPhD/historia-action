@@ -42,18 +42,50 @@ jobs:
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Prepare the draft
+      # The changelog is GitHub's own, the same one the "Generate release notes" button asks for,
+      # rather than a `git log` reformatted here. It reads the pull requests between the two points,
+      # so it says what changed rather than how it was committed.
+      - name: Write the notes from what has landed since the last release
+        id: notes
         if: steps.released.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.resolve.outputs.tag }}
         run: |
-          NOTES="Actions published as \`$TAG\`, running \`$(python3 -c "import re,pathlib; print(re.search(r'image: docker://(\S+)', pathlib.Path('update-github/action.yml').read_text()).group(1))")\`."
+          IMAGE=$(python3 -c "import re,pathlib; print(re.search(r'image: docker://(\S+)', pathlib.Path('update-github/action.yml').read_text()).group(1))")
+          # The bound is the last published release, asked for rather than left to the API default,
+          # which keeps it correct if a prerelease is ever cut in between.
+          PREVIOUS=$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name 2>/dev/null || true)
+          if [ -n "${PREVIOUS}" ]; then
+            CHANGELOG=$(gh api --method POST "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f "tag_name=${TAG}" -f "target_commitish=${GITHUB_SHA}" -f "previous_tag_name=${PREVIOUS}" --jq .body)
+            echo "Changelog since ${PREVIOUS}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # With no release yet there is no previous tree anyone could be pinned to, so the
+            # changelog reaches back to the first commit.
+            CHANGELOG=$(gh api --method POST "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+              -f "tag_name=${TAG}" -f "target_commitish=${GITHUB_SHA}" --jq .body)
+            echo "No previous release, so the changelog covers everything." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
+          # The pinned image is a property of the tag rather than of whatever Historia released, so
+          # the notes say what the release runs as well as what changed in it.
+          printf '# %s\n\nActions published as `%s`, running `%s`.\n\n%s\n' \
+            "${TAG}" "${TAG}" "${IMAGE}" "${CHANGELOG}" > "${NOTES_FILE}"
+          echo "file=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare the draft
+        if: steps.released.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+          NOTES_FILE: ${{ steps.notes.outputs.file }}
+        run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release edit "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES"
+            gh release edit "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES_FILE"
             echo "Updated the existing draft for $TAG." >> "$GITHUB_STEP_SUMMARY"
           else
-            gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes "$NOTES"
+            gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "$TAG" --notes-file "$NOTES_FILE"
             echo "Created a draft for $TAG." >> "$GITHUB_STEP_SUMMARY"
           fi
 
