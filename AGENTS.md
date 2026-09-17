@@ -11,6 +11,10 @@ GitHub Actions that run **Historia** from a published container image. The packa
   A **Historia** release changes nothing here.
 - `runs.image` names one published image and stays there. Edit it only when cutting the next major
   tag, and choose the image that tag needs rather than whatever released last.
+- The reverse holds too. A change to `runs.image` is a release, so the same pull request bumps
+  `VERSION` to the next major tag. A pin moved on `main` under an unchanged `VERSION` reaches nobody.
+  Every published tag keeps the image it was cut with, and `Prepare release draft` prepares nothing
+  while the tag `VERSION` names already exists, so the new pin sits on `main` until someone notices.
 - Always an explicit `X.Y.Z`, never a floating tag such as `latest` or `dev`. A floating tag would
   make a published action run whatever was pushed to it most recently, so a workflow pinned to one
   tag of this repository would change under it. The tests reject anything else.
@@ -25,7 +29,8 @@ GitHub Actions that run **Historia** from a published container image. The packa
   rather than a release.
 - A reference to an older tag resolves and keeps working, so what it costs is not a broken run. It is
   independence: the newer tag is only as stable as the older one it reaches for, and major tags move.
-- Cut a new major tag when the actions' inputs or requirements change incompatibly.
+- Cut a new major tag when the actions' inputs or requirements change incompatibly, and whenever the
+  pinned image moves, since a tag is the only thing a workflow can reference.
 - The `action-versions-agree` pre-commit hook runs the tests that catch the pinned image and the
   sibling references drifting apart. Both are written by hand, so it fails at commit time rather
   than leaving it to CI.
