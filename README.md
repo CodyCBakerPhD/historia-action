@@ -115,6 +115,6 @@ Populating already sets the dates on each item it adds, so a scheduled update do
 A full pass over every item is a different job. It is what a first run needs, or a board whose items predate the date fields, and it is deliberate enough to run by hand:
 
 ```bash
-docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.11.1 \
+docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.11.2 \
   project update dates --url https://github.com/users/CodyCBakerPhD/projects/1
 ```
