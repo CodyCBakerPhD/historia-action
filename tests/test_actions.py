@@ -153,6 +153,21 @@ def test_composite_action_commits_only_after_reclaiming_root_owned_files() -> No
 
 
 @pytest.mark.ai_generated
+def test_composite_action_commits_what_populating_rewrites() -> None:
+    """
+    Populating rewrites the records of items that moved since they were recorded.
+
+    The new content is committed before populating, so a failed populate cannot cost it. The rewrites
+    therefore need a commit of their own afterwards, or they are discarded with the runner.
+    """
+    steps = _composite_action()["runs"]["steps"]
+    step_names = [step["name"] for step in steps]
+
+    assert step_names.index("Commit and push new content") < step_names.index("Populate the GitHub project")
+    assert step_names.index("Commit and push rewritten records") == step_names.index("Populate the GitHub project") + 1
+
+
+@pytest.mark.ai_generated
 def test_composite_action_pushes_the_archive_last() -> None:
     """The archive step leaves the checkout on an orphan branch, so nothing may run after it."""
     steps = _composite_action()["runs"]["steps"]

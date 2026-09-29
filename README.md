@@ -21,7 +21,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: CodyCBakerPhD/historia-action@v3
+      - uses: CodyCBakerPhD/historia-action@v4
         with:
           username: CodyCBakerPhD
           project-url: https://github.com/users/CodyCBakerPhD/projects/1
@@ -29,6 +29,8 @@ jobs:
 ```
 
 It checks out the data repository, fetches recent activity, commits and pushes the new content, populates the project board, and force-pushes a compressed archive to a `dist` branch.
+
+Populating also rewrites the record of any item that has moved since it was recorded, such as an issue transferred to another repository, to the item's current URL. Those rewrites are committed and pushed after the board is populated. The new content is committed first, so a failed populate still keeps it.
 
 Refreshing the dates already on the board is not part of it. See [Refreshing the board's dates](#refreshing-the-boards-dates).
 
@@ -41,7 +43,7 @@ Refreshing the dates already on the board is not part of it. See [Refreshing the
 | `directory` | no | `history` | Directory in the repository holding the JSON files. |
 | `placeholder` | no | `180` | Days after creation to use as a placeholder end date for open items. |
 | `archive-branch` | no | `dist` | Orphan branch for the `content.tar.gz` archive. Empty string skips it. |
-| `commit-message` | no | `update` | Message for each run's commit. |
+| `commit-message` | no | `update` | Message for each run's commits. |
 
 ## Setup
 
@@ -83,7 +85,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 | `project-update-dates` | `historia project update dates` |
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/update-github@v3
+- uses: CodyCBakerPhD/historia-action/update-github@v4
   with:
     directory: history
     username: CodyCBakerPhD
@@ -96,7 +98,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. That is worth its own step rather than a place in the composite:
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/project-update-dates@v3
+- uses: CodyCBakerPhD/historia-action/project-update-dates@v4
   with:
     url: https://github.com/users/CodyCBakerPhD/projects/1
     recency: "7"
@@ -115,6 +117,6 @@ Populating already sets the dates on each item it adds, so a scheduled update do
 A full pass over every item is a different job. It is what a first run needs, or a board whose items predate the date fields, and it is deliberate enough to run by hand:
 
 ```bash
-docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.11.2 \
+docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.12.2 \
   project update dates --url https://github.com/users/CodyCBakerPhD/projects/1
 ```
