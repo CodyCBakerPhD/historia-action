@@ -38,7 +38,7 @@ inputs:
     required: false
     default: dist
   commit-message:
-    description: Message for the commit holding each run's new content.
+    description: Message for the commits holding each run's new content and the records populating rewrites.
     required: false
     default: update
 
@@ -58,7 +58,7 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Update work history data
-      uses: CodyCBakerPhD/historia-action/update-github@v3
+      uses: CodyCBakerPhD/historia-action/update-github@v4
       with:
         directory: ${{ inputs.directory }}
         username: ${{ inputs.username }}
@@ -81,12 +81,24 @@ runs:
         git push
 
     - name: Populate the GitHub project
-      uses: CodyCBakerPhD/historia-action/project-populate@v3
+      uses: CodyCBakerPhD/historia-action/project-populate@v4
       with:
         directory: ${{ inputs.directory }}
         url: ${{ inputs.project-url }}
         placeholder: ${{ inputs.placeholder }}
         token: ${{ inputs.token }}
+
+    # Populating rewrites the records of items that moved since they were recorded. The new content was
+    # committed before it, so a failed populate cannot cost it. The container runs as root, but it only
+    # rewrites files that already exist, which keeps their owner, so nothing needs reclaiming first.
+    - name: Commit and push rewritten records
+      shell: bash
+      env:
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+      run: |
+        git add .
+        git diff --quiet --cached || git commit --message "$COMMIT_MESSAGE"
+        git push
 
     # Last, because it leaves the checkout on the orphan archive branch.
     - name: Push the compressed archive
