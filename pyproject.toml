@@ -10,6 +10,8 @@ line-length = 120
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    # Copyright headers are not added yet
+    "CPY001",
     # Docstring style: prefer the D213 / D211 conventions
     "D203",
     "D212",
