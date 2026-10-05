@@ -27,6 +27,8 @@ GitHub Actions that run **Historia** from a published container image. The packa
   tag name comes from `VERSION` and its target from that commit, so the tag is never typed. It
   prepares nothing when the tag already exists, since moving a published tag is a deliberate act
   rather than a release.
+- Publishing a release triggers `Rebuild Historia docs`, which rebuilds the Historia tutorial so it
+  names the new tag. The tutorial looks the tag up at build time, so nothing there is edited by hand.
 - A reference to an older tag resolves and keeps working, so what it costs is not a broken run. It is
   independence: the newer tag is only as stable as the older one it reaches for, and major tags move.
 - Cut a new major tag when the actions' inputs or requirements change incompatibly, and whenever the
