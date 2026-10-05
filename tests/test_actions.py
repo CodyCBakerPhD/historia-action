@@ -168,12 +168,19 @@ def test_composite_action_commits_what_populating_rewrites() -> None:
 
 
 @pytest.mark.ai_generated
-def test_composite_action_pushes_the_archive_last() -> None:
-    """The archive step leaves the checkout on an orphan branch, so nothing may run after it."""
-    steps = _composite_action()["runs"]["steps"]
+def test_composite_action_publishes_the_archive_through_dist_bundle() -> None:
+    """
+    The archive is the collected data alone, as `content.tar.gz` on an orphan branch, skipped when the branch is empty.
 
-    assert steps[-1]["name"] == "Push the compressed archive"
-    assert steps[-1]["if"] == "inputs.archive-branch != ''"
+    `dist-bundle-action` builds its commit without checking the branch out, so the archive no longer has to come last.
+    It is pinned to a major tag like any other action rather than to this repository's `VERSION`.
+    """
+    steps = {step["name"]: step for step in _composite_action()["runs"]["steps"]}
+    archive = steps["Push the compressed archive"]
+
+    assert re.fullmatch(r"CodyCBakerPhD/dist-bundle-action@v\d+", archive["uses"]) is not None, archive["uses"]
+    assert archive["if"] == "inputs.archive-branch != ''"
+    assert archive["with"] == {"paths": "${{ inputs.directory }}", "branch": "${{ inputs.archive-branch }}"}
 
 
 @pytest.mark.ai_generated
