@@ -30,6 +30,8 @@ jobs:
 
 It checks out the data repository, fetches recent activity, commits and pushes the new content, populates the project board, and force-pushes a compressed archive to a `dist` branch.
 
+The archive is published with [`CodyCBakerPhD/dist-bundle-action`](https://github.com/CodyCBakerPhD/dist-bundle-action). It holds the data directory as `content.tar.gz` and is only pushed when its content changed.
+
 The activity covers pull requests and issues the user opened or is assigned to, along with pull requests where their review was requested or that they reviewed.
 
 Populating also rewrites the record of any item that has moved since it was recorded, such as an issue transferred to another repository, to the item's current URL. Those rewrites are committed and pushed after the board is populated. The new content is committed first, so a failed populate still keeps it.

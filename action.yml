@@ -100,18 +100,9 @@ runs:
         git diff --quiet --cached || git commit --message "$COMMIT_MESSAGE"
         git push
 
-    # Last, because it leaves the checkout on the orphan archive branch.
     - name: Push the compressed archive
       if: inputs.archive-branch != ''
-      shell: bash
-      env:
-        ARCHIVE_BRANCH: ${{ inputs.archive-branch }}
-        DIRECTORY: ${{ inputs.directory }}
-      run: |
-        tar -czf content.tar.gz "$DIRECTORY"
-        git branch -D "$ARCHIVE_BRANCH" || true
-        git checkout --orphan "$ARCHIVE_BRANCH"
-        git rm -rf --cached .
-        git add content.tar.gz
-        git commit --message "update dist archive [skip ci]"
-        git push --force origin "HEAD:$ARCHIVE_BRANCH"
+      uses: CodyCBakerPhD/dist-bundle-action@v1
+      with:
+        paths: ${{ inputs.directory }}
+        branch: ${{ inputs.archive-branch }}
