@@ -1,6 +1,6 @@
 # historia-action
 
-GitHub Actions that run [**Historia**](https://historia.readthedocs.io/en/latest/) from a pinned container image.
+GitHub Action for using [**Historia**](https://historia.readthedocs.io/en/latest/) in a project.
 
 ## The whole process in one step
 
