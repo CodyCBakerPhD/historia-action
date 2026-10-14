@@ -1,6 +1,6 @@
 # historia-action
 
-GitHub Action for using [**Historia**](https://historia.readthedocs.io/en/latest/) in a project.
+GitHub action for using [**Historia**](https://historia.readthedocs.io/en/latest/) in a project.
 
 ## The whole process in one step
 
