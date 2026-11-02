@@ -1,5 +1,8 @@
+import os
 import pathlib
 import re
+import shutil
+import subprocess
 
 import pytest
 import yaml
@@ -207,3 +210,158 @@ def test_composite_action_pushes_with_the_workflow_token_only() -> None:
     for step in action["runs"]["steps"]:
         if step.get("uses", "").startswith("CodyCBakerPhD/historia-action"):
             assert step["with"]["token"] == "${{ inputs.token }}", step["name"]  # noqa: S105
+
+
+_FAKE_GH = """#!/usr/bin/env bash
+printf '%s\\x1f' "$@" >> "$FAKE_GH_LOG"
+printf '\\x1e' >> "$FAKE_GH_LOG"
+case "$1 $2" in
+  "issue list")
+    if [ -n "${FAKE_GH_FAIL:-}" ]; then exit 1; fi
+    printf '%s' "${FAKE_OPEN_ISSUE:-}"
+    ;;
+  "issue view")
+    printf '%s' "${FAKE_EARLIER_COMMENTS:-0}"
+    ;;
+esac
+"""
+
+
+def _run_rate_limit_tracking(*, tmp_path: pathlib.Path, environment: dict[str, str]) -> tuple[str, list[list[str]]]:
+    """Run the tracking step's script as GitHub runs a composite `bash` step, with a fake `gh` on the path."""
+    steps = {step["name"]: step for step in _composite_action()["runs"]["steps"]}
+    script_path = tmp_path / "track.sh"
+    script_path.write_text(steps["Track rate limiting"]["run"], encoding="utf-8")
+    bin_directory = tmp_path / "bin"
+    bin_directory.mkdir()
+    fake_gh = bin_directory / "gh"
+    fake_gh.write_text(_FAKE_GH, encoding="utf-8")
+    fake_gh.chmod(0o755)
+    log_path = tmp_path / "gh.log"
+    log_path.write_text("", encoding="utf-8")
+
+    env = {
+        "PATH": f"{bin_directory}{os.pathsep}{os.environ['PATH']}",
+        "FAKE_GH_LOG": str(log_path),
+        "GITHUB_SERVER_URL": "https://github.com",
+        "GITHUB_REPOSITORY": "octocat/history",
+        "GITHUB_RUN_ID": "42",
+        "LABEL": "historia-rate-limit",
+        "USERNAME": "octocat",
+        **environment,
+    }
+    bash = shutil.which("bash")
+    assert bash is not None
+    result = subprocess.run(  # noqa: S603
+        [bash, "--noprofile", "--norc", "-eo", "pipefail", str(script_path)],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    calls = [entry.split("\x1f")[:-1] for entry in log_path.read_text(encoding="utf-8").split("\x1e")[:-1]]
+    return result.stdout, calls
+
+
+@pytest.mark.ai_generated
+def test_composite_action_passes_the_rate_limit_on() -> None:
+    action = _composite_action()
+    steps = {step["name"]: step for step in action["runs"]["steps"]}
+    update_github = yaml.safe_load((_REPOSITORY_ROOT / "update-github" / "action.yml").read_text(encoding="utf-8"))
+
+    assert "rate-limited" in update_github["outputs"]
+    assert steps["Update work history data"]["id"] == "update"
+    assert action["outputs"]["rate-limited"]["value"] == "${{ steps.update.outputs.rate-limited }}"
+
+
+@pytest.mark.ai_generated
+def test_composite_action_tracks_rate_limits_after_committing_with_the_workflow_token() -> None:
+    """The tracking runs once the fetched data is committed, and before populating, which can fail on its own."""
+    steps = _composite_action()["runs"]["steps"]
+    step_names = [step["name"] for step in steps]
+    tracking = {step["name"]: step for step in steps}["Track rate limiting"]
+
+    assert step_names.index("Track rate limiting") == step_names.index("Commit and push new content") + 1
+    assert step_names.index("Track rate limiting") < step_names.index("Populate the GitHub project")
+    assert tracking["if"] == "inputs.rate-limit-label != '' && steps.update.outputs.rate-limited != ''"
+    assert tracking["env"]["GH_TOKEN"] == "${{ github.token }}"  # noqa: S105
+    assert "${{" not in tracking["run"]
+
+
+@pytest.mark.ai_generated
+@pytest.mark.parametrize(
+    ("environment", "expected_commands"),
+    [
+        pytest.param(
+            {"RATE_LIMITED": "true", "FAKE_OPEN_ISSUE": ""},
+            [["issue", "list"], ["label", "create"], ["issue", "create"]],
+            id="first-rate-limited-run-opens-the-issue",
+        ),
+        pytest.param(
+            {"RATE_LIMITED": "true", "FAKE_OPEN_ISSUE": "7", "FAKE_EARLIER_COMMENTS": "2"},
+            [["issue", "list"], ["issue", "view"], ["issue", "comment"]],
+            id="later-rate-limited-run-comments",
+        ),
+        pytest.param(
+            {"RATE_LIMITED": "false", "FAKE_OPEN_ISSUE": "7"},
+            [["issue", "list"], ["issue", "close"]],
+            id="clean-run-closes-the-issue",
+        ),
+        pytest.param(
+            {"RATE_LIMITED": "false", "FAKE_OPEN_ISSUE": ""},
+            [["issue", "list"]],
+            id="clean-run-without-an-issue-does-nothing",
+        ),
+    ],
+)
+def test_rate_limit_tracking_keeps_one_issue_open_while_runs_are_rate_limited(
+    tmp_path: pathlib.Path,
+    environment: dict[str, str],
+    expected_commands: list[list[str]],
+) -> None:
+    stdout, calls = _run_rate_limit_tracking(tmp_path=tmp_path, environment=environment)
+
+    assert [call[:2] for call in calls] == expected_commands
+    assert "::warning" not in stdout
+    for call in calls:
+        assert call[call.index("--repo") + 1] == "octocat/history"
+
+
+@pytest.mark.ai_generated
+def test_rate_limit_tracking_mentions_the_user_and_counts_consecutive_runs(tmp_path: pathlib.Path) -> None:
+    (tmp_path / "first").mkdir()
+    (tmp_path / "later").mkdir()
+
+    _, first_calls = _run_rate_limit_tracking(
+        tmp_path=tmp_path / "first",
+        environment={"RATE_LIMITED": "true", "FAKE_OPEN_ISSUE": ""},
+    )
+    _, later_calls = _run_rate_limit_tracking(
+        tmp_path=tmp_path / "later",
+        environment={"RATE_LIMITED": "true", "FAKE_OPEN_ISSUE": "7", "FAKE_EARLIER_COMMENTS": "2"},
+    )
+
+    create = first_calls[-1]
+    issue_body = create[create.index("--body") + 1]
+    assert create[create.index("--label") + 1] == "historia-rate-limit"
+    assert issue_body.startswith("<!-- historia-rate-limit -->\n@octocat, ")
+    assert "https://github.com/octocat/history/actions/runs/42" in issue_body
+
+    comment = later_calls[-1]
+    assert comment[2] == "7"
+    comment_body = comment[comment.index("--body") + 1]
+    assert comment_body.startswith("<!-- historia-rate-limit -->\n")
+    assert "That makes 4 runs in a row." in comment_body
+
+
+@pytest.mark.ai_generated
+def test_rate_limit_tracking_never_fails_the_run(tmp_path: pathlib.Path) -> None:
+    """Without `issues: write` the listing fails, which must warn rather than fail a run that saved its data."""
+    stdout, calls = _run_rate_limit_tracking(
+        tmp_path=tmp_path,
+        environment={"RATE_LIMITED": "true", "FAKE_GH_FAIL": "1"},
+    )
+
+    assert [call[:2] for call in calls] == [["issue", "list"]]
+    assert stdout.startswith("::warning title=Rate limit tracking skipped::Could not list the issues.")
