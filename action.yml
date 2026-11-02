@@ -41,6 +41,20 @@ inputs:
     description: Message for the commits holding each run's new content and the records populating rewrites.
     required: false
     default: update
+  rate-limit-label:
+    description: >-
+      Label of the issue that tracks runs hitting the GitHub API rate limit. The issue opens on the first
+      such run, gets a comment on each one after it, and closes on the next run that is not rate limited.
+      It needs `issues: write`. Set to an empty string to skip it.
+    required: false
+    default: historia-rate-limit
+
+outputs:
+  rate-limited:
+    description: >-
+      `true` when the GitHub API rate limit was hit while fetching, so some days were not saved, and `false`
+      otherwise. The run still succeeds either way.
+    value: ${{ steps.update.outputs.rate-limited }}
 
 runs:
   using: composite
@@ -58,7 +72,8 @@ runs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Update work history data
-      uses: CodyCBakerPhD/historia-action/update-github@v5
+      id: update
+      uses: CodyCBakerPhD/historia-action/update-github@v6
       with:
         directory: ${{ inputs.directory }}
         username: ${{ inputs.username }}
@@ -80,8 +95,53 @@ runs:
         git diff --quiet --cached || git commit --message "$COMMIT_MESSAGE"
         git push
 
+    # A rate limit is transient, so the run itself succeeds and commits what it fetched. The issue is what
+    # makes a limit that keeps recurring visible. Tracking never fails the run, since the data is the point.
+    - name: Track rate limiting
+      if: inputs.rate-limit-label != '' && steps.update.outputs.rate-limited != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        LABEL: ${{ inputs.rate-limit-label }}
+        RATE_LIMITED: ${{ steps.update.outputs.rate-limited }}
+        USERNAME: ${{ inputs.username }}
+      run: |
+        marker="<!-- historia-rate-limit -->"
+        run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+        today=$(date -u +%F)
+        skip() {
+          echo "::warning title=Rate limit tracking skipped::$1 Grant the job \`issues: write\`, or set \`rate-limit-label\` to an empty string."
+          exit 0
+        }
+
+        open_issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --label "$LABEL" --state open --limit 1 \
+          --json number --jq '.[0].number // empty') || skip "Could not list the issues."
+
+        if [ "$RATE_LIMITED" = "true" ] && [ -z "$open_issue" ]; then
+          gh label create "$LABEL" --repo "$GITHUB_REPOSITORY" --force --color FBCA04 \
+            --description "Historia runs are hitting the GitHub API rate limit" || skip "Could not create the label."
+          body="$marker
+        @${USERNAME}, the scheduled Historia run on ${today} hit the GitHub API rate limit, so some days were not saved. [See the run](${run_url}).
+
+        The run still succeeded and committed everything it did fetch. Each later run fetches again the missing days that fall inside its \`recency\` window, so a limit that passes leaves no gap. A day that falls out of the window while the limit lasts stays missing.
+
+        Each run that hits the limit again adds a comment here, and the next run that does not closes this issue."
+          gh issue create --repo "$GITHUB_REPOSITORY" --label "$LABEL" \
+            --title "Historia runs are hitting the GitHub API rate limit" --body "$body" || skip "Could not open the issue."
+        elif [ "$RATE_LIMITED" = "true" ]; then
+          earlier=$(gh issue view "$open_issue" --repo "$GITHUB_REPOSITORY" --json comments \
+            --jq "[.comments[] | select(.body | contains(\"$marker\"))] | length") || skip "Could not read the issue."
+          body="$marker
+        The run on ${today} hit the rate limit again. That makes $((earlier + 2)) runs in a row. [See the run](${run_url})."
+          gh issue comment "$open_issue" --repo "$GITHUB_REPOSITORY" --body "$body" || skip "Could not comment on the issue."
+        elif [ -n "$open_issue" ]; then
+          gh issue close "$open_issue" --repo "$GITHUB_REPOSITORY" \
+            --comment "The run on ${today} finished without hitting the rate limit. [See the run](${run_url})." \
+            || skip "Could not close the issue."
+        fi
+
     - name: Populate the GitHub project
-      uses: CodyCBakerPhD/historia-action/project-populate@v5
+      uses: CodyCBakerPhD/historia-action/project-populate@v6
       with:
         directory: ${{ inputs.directory }}
         url: ${{ inputs.project-url }}

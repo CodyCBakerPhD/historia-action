@@ -19,9 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
 
     steps:
-      - uses: CodyCBakerPhD/historia-action@v5
+      - uses: CodyCBakerPhD/historia-action@v6
         with:
           username: CodyCBakerPhD
           project-url: https://github.com/users/CodyCBakerPhD/projects/1
@@ -48,6 +49,19 @@ Refreshing the dates already on the board is not part of it. See [Refreshing the
 | `placeholder` | no | `180` | Days after creation to use as a placeholder end date for open items. |
 | `archive-branch` | no | `dist` | Orphan branch for the `content.tar.gz` archive. Empty string skips it. |
 | `commit-message` | no | `update` | Message for each run's commits. |
+| `rate-limit-label` | no | `historia-rate-limit` | Label of the issue that tracks rate-limited runs. Empty string skips it. See [Rate limit alerts](#rate-limit-alerts). |
+
+| Output | Description |
+| --- | --- |
+| `rate-limited` | `true` when the run hit the GitHub API rate limit, so some days were not saved, and `false` otherwise. |
+
+## Rate limit alerts
+
+A run that hits the GitHub API rate limit still succeeds. It commits everything it did fetch, and each later run fetches again the missing days that fall inside its `recency` window. Failing the run would throw that progress away, so the alert is an issue instead.
+
+The first run that hits the limit opens an issue in the data repository, labeled `historia-rate-limit` and mentioning `username`. Each run that hits it again comments on that issue with the number of runs in a row. The next run that does not hit it closes the issue. So an open issue with a growing comment count is a limit that keeps recurring, rather than a passing one.
+
+Tracking needs `issues: write`, as in the example above. Without it, the run warns that tracking was skipped and still succeeds. Set `rate-limit-label` to an empty string to turn tracking off. The `rate-limited` output is set either way, for a workflow that wants to alert some other way.
 
 ## Setup
 
@@ -84,12 +98,12 @@ The composite is built from three narrower actions, each wrapping one command. U
 
 | Action | Command it runs |
 | --- | --- |
-| `update-github` | `historia update github` |
+| `update-github` | `historia update github`, with a `rate-limited` output |
 | `project-populate` | `historia project populate` |
 | `project-update-dates` | `historia project update dates` |
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/update-github@v5
+- uses: CodyCBakerPhD/historia-action/update-github@v6
   with:
     directory: history
     username: CodyCBakerPhD
@@ -102,7 +116,7 @@ The composite is built from three narrower actions, each wrapping one command. U
 Populating already sets the dates on each item it adds, so a scheduled update does not need this to keep new items right. What it catches is items whose dates moved after they were added, mostly ones closed since. That is worth its own step rather than a place in the composite:
 
 ```yaml
-- uses: CodyCBakerPhD/historia-action/project-update-dates@v5
+- uses: CodyCBakerPhD/historia-action/project-update-dates@v6
   with:
     url: https://github.com/users/CodyCBakerPhD/projects/1
     recency: "7"
@@ -121,6 +135,6 @@ Populating already sets the dates on each item it adds, so a scheduled update do
 A full pass over every item is a different job. It is what a first run needs, or a board whose items predate the date fields, and it is deliberate enough to run by hand:
 
 ```bash
-docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.13.0 \
+docker run --rm -e GITHUB_TOKEN ghcr.io/codycbakerphd/historia:0.15.0 \
   project update dates --url https://github.com/users/CodyCBakerPhD/projects/1
 ```

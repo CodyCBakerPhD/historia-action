@@ -16,9 +16,15 @@ inputs:
     description: GitHub token used to authenticate API requests.
     required: true
 
+outputs:
+  rate-limited:
+    description: >-
+      `true` when the GitHub API rate limit was hit, so some days were not saved, and `false` otherwise.
+      The run still succeeds, so a later step has to act on this to notice.
+
 runs:
   using: docker
-  image: docker://ghcr.io/codycbakerphd/historia:0.13.0
+  image: docker://ghcr.io/codycbakerphd/historia:0.15.0
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
   args:
